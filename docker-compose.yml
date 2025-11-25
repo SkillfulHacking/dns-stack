@@ -1,0 +1,37 @@
+services:
+  unbound:
+    image: mvance/unbound:1.22.0
+    container_name: unbound
+    restart: unless-stopped
+    networks:
+      dns-net:
+        ipv4_address: 10.2.0.200
+    volumes:
+      - ./unbound:/opt/unbound/etc/unbound
+
+  pihole:
+    image: pihole/pihole:2024.07.0
+    container_name: pihole
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+    environment:
+      TZ: "America/New_York"
+      PIHOLE_DNS_: "10.2.0.200#5053"
+    volumes:
+      - ./pihole/etc-pihole:/etc/pihole
+      - ./pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+    networks:
+      dns-net:
+        ipv4_address: 10.2.0.100
+    depends_on:
+      - unbound
+
+networks:
+  dns-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.2.0.0/24
